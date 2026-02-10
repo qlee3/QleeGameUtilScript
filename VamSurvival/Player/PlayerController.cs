@@ -8,12 +8,14 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerInput))]
 [RequireComponent(typeof(PlayerMovement))]
 [RequireComponent(typeof(PlayerAnimator))]
+[RequireComponent(typeof(PlayerStats))]
 public class PlayerController : Entity<PlayerController>
 {
     // ── 모듈 참조 ──
     public PlayerInput Input { get; private set; }
     public PlayerMovement Movement { get; private set; }
     public PlayerAnimator Animator { get; private set; }
+    public PlayerStats Stats { get; private set; }
 
     // ── 상태 인스턴스 (캐싱) ──
     public PlayerIdleState IdleState { get; private set; }
@@ -25,6 +27,7 @@ public class PlayerController : Entity<PlayerController>
         Input = GetComponent<PlayerInput>();
         Movement = GetComponent<PlayerMovement>();
         Animator = GetComponent<PlayerAnimator>();
+        Stats = GetComponent<PlayerStats>();
 
         // 상태 인스턴스 생성
         IdleState = new PlayerIdleState();
