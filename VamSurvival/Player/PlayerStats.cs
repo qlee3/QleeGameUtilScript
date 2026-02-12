@@ -38,6 +38,7 @@ public class PlayerStats : MonoBehaviour
     [SerializeField] private float baseSkillCooldown = 1f;
     [SerializeField] private float baseCritChance = 0.05f;
     [SerializeField] private float baseCritDamage = 1.5f;
+    [SerializeField] private float baseExpMultiplier = 1f;
 
     // ── 스탯 인스턴스 ──
 
@@ -77,6 +78,9 @@ public class PlayerStats : MonoBehaviour
     /// <summary>치명타 공격력 배율.</summary>
     public Stat CritDamage { get; private set; }
 
+    /// <summary>경험치 획득 배율 (1 = 100%).</summary>
+    public Stat ExpMultiplier { get; private set; }
+
     private void Awake()
     {
         MaxHp = new Stat(baseMaxHp);
@@ -91,6 +95,7 @@ public class PlayerStats : MonoBehaviour
         SkillCooldown = new Stat(baseSkillCooldown);
         CritChance = new Stat(baseCritChance);
         CritDamage = new Stat(baseCritDamage);
+        ExpMultiplier = new Stat(baseExpMultiplier);
     }
 
     /// <summary>
@@ -113,6 +118,7 @@ public class PlayerStats : MonoBehaviour
             new StatDisplayInfo("스킬 쿨타임", SkillCooldown, false), // 낮을수록 좋음
             new StatDisplayInfo("치명타 확률", CritChance, true),
             new StatDisplayInfo("치명타 배율", CritDamage, true),
+            new StatDisplayInfo("경험치 배율", ExpMultiplier, true),
         };
     }
 }
