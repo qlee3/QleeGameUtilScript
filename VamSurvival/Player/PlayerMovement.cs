@@ -10,11 +10,17 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float rotationSpeed = 720f;
 
+    [Header("Knockback")]
+    [SerializeField] private float knockbackDecay = 8f;
+
     private PlayerController controller;
     private Rigidbody rb;
 
     /// <summary>FixedUpdate에서 처리할 이동 벡터 (방향 × 속도).</summary>
     private Vector3 pendingMove;
+
+    /// <summary>넉백 속도. FixedUpdate에서 감쇠 적용.</summary>
+    private Vector3 knockbackVelocity;
 
     /// <summary>현재 이동 중인지 여부.</summary>
     public bool IsMoving { get; private set; }
@@ -69,14 +75,6 @@ public class PlayerMovement : MonoBehaviour
         );
     }
 
-    private void FixedUpdate()
-    {
-        if (pendingMove.sqrMagnitude > 0.001f)
-        {
-            rb.MovePosition(rb.position + pendingMove * Time.fixedDeltaTime);
-        }
-    }
-
     /// <summary>
     /// 이동을 즉시 멈춥니다. IdleState 진입 시 호출하세요.
     /// </summary>
@@ -84,5 +82,32 @@ public class PlayerMovement : MonoBehaviour
     {
         IsMoving = false;
         pendingMove = Vector3.zero;
+    }
+
+    /// <summary>
+    /// 피격 방향으로 넉백을 적용합니다.
+    /// HurtState에서 호출합니다.
+    /// </summary>
+    public void ApplyKnockback(Vector3 direction, float force)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) return;
+        knockbackVelocity = direction.normalized * force;
+    }
+
+    private void FixedUpdate()
+    {
+        // 넉백 감쇠
+        knockbackVelocity = Vector3.MoveTowards(
+            knockbackVelocity,
+            Vector3.zero,
+            knockbackDecay * Time.fixedDeltaTime
+        );
+
+        Vector3 totalMove = pendingMove * Time.fixedDeltaTime + knockbackVelocity * Time.fixedDeltaTime;
+        if (totalMove.sqrMagnitude > 0.001f)
+        {
+            rb.MovePosition(rb.position + totalMove);
+        }
     }
 }

@@ -25,6 +25,7 @@ public class PlayerController : Entity<PlayerController>
     // ── 상태 인스턴스 (캐싱) ──
     public PlayerIdleState IdleState { get; private set; }
     public PlayerMoveState MoveState { get; private set; }
+    public PlayerHurtState HurtState { get; private set; }
 
     private void Awake()
     {
@@ -39,12 +40,28 @@ public class PlayerController : Entity<PlayerController>
         // 상태 인스턴스 생성
         IdleState = new PlayerIdleState();
         MoveState = new PlayerMoveState();
+        HurtState = new PlayerHurtState();
     }
 
     private void Start()
     {
+        Health.OnDamaged += HandleDamaged;
         // 초기 상태: Idle
         ChangeState(IdleState);
+    }
+
+    private void OnDestroy()
+    {
+        Health.OnDamaged -= HandleDamaged;
+    }
+
+    private void HandleDamaged(DamageInfo damage)
+    {
+        if (!Health.IsAlive) return;
+        if (CurrentState is PlayerHurtState) return;
+
+        HurtState.SetDamageInfo(damage);
+        ChangeState(HurtState);
     }
 
     protected override void Update()

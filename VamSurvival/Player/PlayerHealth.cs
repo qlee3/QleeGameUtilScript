@@ -54,8 +54,6 @@ public class PlayerHealth : MonoBehaviour, IDamageable
 
         currentHp = Mathf.Max(0f, currentHp - hpDamage);
 
-        Debug.Log($"PlayerHealth: TakeDamage({damage.Amount}) -> {rawDamage} -> {shieldAbsorb} -> {hpDamage} -> {currentHp}");
-
         OnDamaged?.Invoke(damage);
 
         if (!IsAlive)
