@@ -16,11 +16,20 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     /// <summary>현재 살아있는지 여부.</summary>
     public bool IsAlive => currentHp > 0f;
 
+    /// <summary>현재 체력 값.</summary>
+    public float CurrentHp => currentHp;
+
+    /// <summary>최대 체력 값.</summary>
+    public float MaxHp => stats != null ? stats.MaxHp.Value : 0f;
+
     /// <summary>현재 체력 비율 (0~1).</summary>
     public float HpRatio => stats != null ? Mathf.Clamp01(currentHp / stats.MaxHp.Value) : 0f;
 
     /// <summary>피해를 받았을 때 발생. (DamageInfo)</summary>
     public event Action<DamageInfo> OnDamaged;
+
+    /// <summary>체력 값이 변할 때 발생. (currentHp, maxHp)</summary>
+    public event Action<float, float> OnHpChanged;
 
     /// <summary>사망 시 발생.</summary>
     public event Action OnDeath;
@@ -34,6 +43,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     {
         currentHp = stats.MaxHp.Value;
         currentShield = stats.Shield.Value;
+        NotifyHpChanged();
     }
 
     /// <summary>
@@ -55,6 +65,7 @@ public class PlayerHealth : MonoBehaviour, IDamageable
         currentHp = Mathf.Max(0f, currentHp - hpDamage);
 
         OnDamaged?.Invoke(damage);
+        NotifyHpChanged();
 
         if (!IsAlive)
         {
@@ -72,7 +83,9 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     public void Heal(float amount)
     {
         if (!IsAlive) return;
+        if (amount <= 0f) return;
         currentHp = Mathf.Min(currentHp + amount, stats.MaxHp.Value);
+        NotifyHpChanged();
     }
 
     /// <summary>방어막을 회복합니다.</summary>
@@ -85,5 +98,10 @@ public class PlayerHealth : MonoBehaviour, IDamageable
     private void Die()
     {
         OnDeath?.Invoke();
+    }
+
+    private void NotifyHpChanged()
+    {
+        OnHpChanged?.Invoke(currentHp, MaxHp);
     }
 }
