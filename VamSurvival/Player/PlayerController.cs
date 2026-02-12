@@ -10,6 +10,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerAnimator))]
 [RequireComponent(typeof(PlayerStats))]
 [RequireComponent(typeof(PlayerLevel))]
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerController : Entity<PlayerController>
 {
     // ── 모듈 참조 ──
