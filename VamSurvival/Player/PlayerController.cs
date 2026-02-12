@@ -9,6 +9,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerMovement))]
 [RequireComponent(typeof(PlayerAnimator))]
 [RequireComponent(typeof(PlayerStats))]
+[RequireComponent(typeof(PlayerHealth))]
 [RequireComponent(typeof(PlayerLevel))]
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerController : Entity<PlayerController>
@@ -18,6 +19,7 @@ public class PlayerController : Entity<PlayerController>
     public PlayerMovement Movement { get; private set; }
     public PlayerAnimator Animator { get; private set; }
     public PlayerStats Stats { get; private set; }
+    public PlayerHealth Health { get; private set; }
     public PlayerLevel Level { get; private set; }
 
     // ── 상태 인스턴스 (캐싱) ──
@@ -31,6 +33,7 @@ public class PlayerController : Entity<PlayerController>
         Movement = GetComponent<PlayerMovement>();
         Animator = GetComponent<PlayerAnimator>();
         Stats = GetComponent<PlayerStats>();
+        Health = GetComponent<PlayerHealth>();
         Level = GetComponent<PlayerLevel>();
 
         // 상태 인스턴스 생성
