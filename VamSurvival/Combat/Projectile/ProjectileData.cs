@@ -39,6 +39,18 @@ public class ProjectileData : ScriptableObject
     [Header("Lifetime")]
     [Tooltip("생존 시간(초)")]
     [Min(0.05f)] public float lifeTime = 3f;
+
+    private void OnValidate()
+    {
+        // 기본 충돌 레이어는 Wall을 사용합니다.
+        if (targetLayers.value != 0) return;
+
+        int wallLayer = LayerMask.NameToLayer("Wall");
+        if (wallLayer >= 0)
+        {
+            targetLayers = 1 << wallLayer;
+        }
+    }
 }
 
 public enum ProjectileDamageScaling

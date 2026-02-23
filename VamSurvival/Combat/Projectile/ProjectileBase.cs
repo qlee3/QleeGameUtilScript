@@ -13,6 +13,12 @@ public class ProjectileBase : MonoBehaviour
     [Header("Optional References")]
     [SerializeField] private Collider hitCollider;
 
+    [Header("Effect (ETFX-style)")]
+    [SerializeField] private GameObject muzzleEffectPrefab;
+    [SerializeField] private GameObject impactEffectPrefab;
+    [SerializeField] private float muzzleEffectLifetime = 1.5f;
+    [SerializeField] private float impactEffectLifetime = 3f;
+
     private Rigidbody rb;
     private ProjectileData data;
     private IProjectileMovement movement;
@@ -22,6 +28,7 @@ public class ProjectileBase : MonoBehaviour
     private float lifeRemaining;
     private int hitCount;
     private float runtimeDamage;
+    private int runtimeTargetLayerMask;
     private Vector3 travelDirection = Vector3.forward;
     private bool isInitialized;
 
@@ -63,7 +70,8 @@ public class ProjectileBase : MonoBehaviour
         Vector3 direction,
         Transform homingTarget = null,
         IObjectPool<ProjectileBase> objectPool = null,
-        float overrideDamage = -1f
+        float overrideDamage = -1f,
+        int overrideTargetLayerMask = -1
     )
     {
         data = projectileData;
@@ -82,6 +90,9 @@ public class ProjectileBase : MonoBehaviour
         }
 
         runtimeDamage = overrideDamage >= 0f ? overrideDamage : data.damage;
+        runtimeTargetLayerMask = overrideTargetLayerMask >= 0
+            ? overrideTargetLayerMask
+            : data.targetLayers.value;
 
         travelDirection = direction.sqrMagnitude > 0.001f ? direction.normalized : transform.forward;
         movement = ProjectileMovementFactory.Create(data.movementType);
@@ -127,6 +138,11 @@ public class ProjectileBase : MonoBehaviour
         Vector3 hitDirection = travelDirection.sqrMagnitude > 0.001f
             ? travelDirection
             : (other.transform.position - transform.position).normalized;
+        Vector3 hitNormal = (transform.position - hitPoint).sqrMagnitude > 0.001f
+            ? (transform.position - hitPoint).normalized
+            : -hitDirection;
+
+        SpawnImpactEffect(hitPoint, hitNormal);
 
         target.TakeDamage(new DamageInfo
         {
@@ -177,10 +193,10 @@ public class ProjectileBase : MonoBehaviour
             }
         }
 
-        if (data.targetLayers.value != 0)
+        if (runtimeTargetLayerMask != 0)
         {
             int layerBit = 1 << other.gameObject.layer;
-            if ((data.targetLayers.value & layerBit) == 0)
+            if ((runtimeTargetLayerMask & layerBit) == 0)
             {
                 return false;
             }
@@ -278,6 +294,50 @@ public class ProjectileBase : MonoBehaviour
             TrailRenderer tr = trailRenderers[i];
             if (tr == null) continue;
             tr.Clear();
+        }
+    }
+
+    private void SpawnImpactEffect(Vector3 position, Vector3 normal)
+    {
+        if (impactEffectPrefab == null) return;
+
+        Quaternion rotation = normal.sqrMagnitude > 0.001f
+            ? Quaternion.FromToRotation(Vector3.up, normal.normalized)
+            : Quaternion.identity;
+
+        if (ProjectilePool.Instance != null)
+        {
+            ProjectilePool.Instance.SpawnEffect(
+                impactEffectPrefab,
+                position,
+                rotation,
+                impactEffectLifetime
+            );
+        }
+        else
+        {
+            GameObject impact = Instantiate(impactEffectPrefab, position, rotation);
+            Destroy(impact, impactEffectLifetime);
+        }
+    }
+
+    public void SpawnMuzzleEffect(Vector3 position, Quaternion rotation)
+    {
+        if (muzzleEffectPrefab == null) return;
+
+        if (ProjectilePool.Instance != null)
+        {
+            ProjectilePool.Instance.SpawnEffect(
+                muzzleEffectPrefab,
+                position,
+                rotation,
+                muzzleEffectLifetime
+            );
+        }
+        else
+        {
+            GameObject muzzle = Instantiate(muzzleEffectPrefab, position, rotation);
+            Destroy(muzzle, muzzleEffectLifetime);
         }
     }
 }

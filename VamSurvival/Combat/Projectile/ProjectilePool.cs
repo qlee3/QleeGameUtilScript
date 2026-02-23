@@ -13,8 +13,11 @@ public class ProjectilePool : MonoBehaviour
     [SerializeField] private ProjectileData[] preconfiguredProjectiles;
     [SerializeField] private int defaultCapacity = 16;
     [SerializeField] private int maxSize = 128;
+    [SerializeField] private int effectDefaultCapacity = 8;
+    [SerializeField] private int effectMaxSize = 64;
 
     private readonly Dictionary<ProjectileData, IObjectPool<ProjectileBase>> pools = new();
+    private readonly Dictionary<GameObject, IObjectPool<GameObject>> effectPools = new();
 
     private void Awake()
     {
@@ -43,7 +46,8 @@ public class ProjectilePool : MonoBehaviour
         object owner,
         Vector3 direction,
         Transform homingTarget = null,
-        float overrideDamage = -1f
+        float overrideDamage = -1f,
+        int overrideTargetLayerMask = -1
     )
     {
         if (data == null || data.projectilePrefab == null)
@@ -56,10 +60,32 @@ public class ProjectilePool : MonoBehaviour
         ProjectileBase projectile = pool.Get();
 
         projectile.transform.SetPositionAndRotation(position, rotation);
-        projectile.Initialize(data, owner, direction, homingTarget, pool, overrideDamage);
+        projectile.Initialize(data, owner, direction, homingTarget, pool, overrideDamage, overrideTargetLayerMask);
         projectile.gameObject.SetActive(true);
         projectile.OnSpawnedFromPool();
         return projectile;
+    }
+
+    public GameObject SpawnEffect(GameObject effectPrefab, Vector3 position, Quaternion rotation, float lifeTime)
+    {
+        if (effectPrefab == null) return null;
+
+        IObjectPool<GameObject> pool = GetOrCreateEffectPool(effectPrefab);
+        GameObject effect = pool.Get();
+        effect.transform.SetPositionAndRotation(position, rotation);
+        effect.SetActive(true);
+
+        if (effect.TryGetComponent(out PooledEffectAutoRelease autoRelease))
+        {
+            autoRelease.OnSpawned(lifeTime);
+        }
+        else
+        {
+            // 방어 코드: 컴포넌트가 없으면 비풀링 fallback
+            Destroy(effect, lifeTime);
+        }
+
+        return effect;
     }
 
     private void BuildPreconfiguredPools()
@@ -109,5 +135,53 @@ public class ProjectilePool : MonoBehaviour
 
         pools.Add(data, pool);
         return pool;
+    }
+
+    private IObjectPool<GameObject> GetOrCreateEffectPool(GameObject effectPrefab)
+    {
+        if (effectPools.TryGetValue(effectPrefab, out IObjectPool<GameObject> existing))
+        {
+            return existing;
+        }
+
+        IObjectPool<GameObject> effectPool = null;
+        effectPool = new ObjectPool<GameObject>(
+            createFunc: () =>
+            {
+                GameObject instance = Instantiate(effectPrefab, transform);
+                instance.SetActive(false);
+
+                PooledEffectAutoRelease autoRelease = instance.GetComponent<PooledEffectAutoRelease>();
+                if (autoRelease == null)
+                {
+                    autoRelease = instance.AddComponent<PooledEffectAutoRelease>();
+                }
+                autoRelease.SetPool(effectPool);
+
+                return instance;
+            },
+            actionOnGet: _ => { },
+            actionOnRelease: instance =>
+            {
+                if (instance.TryGetComponent(out PooledEffectAutoRelease autoRelease))
+                {
+                    autoRelease.OnReleased();
+                }
+                instance.SetActive(false);
+            },
+            actionOnDestroy: instance =>
+            {
+                if (instance != null)
+                {
+                    Destroy(instance);
+                }
+            },
+            collectionCheck: false,
+            defaultCapacity: effectDefaultCapacity,
+            maxSize: effectMaxSize
+        );
+
+        effectPools.Add(effectPrefab, effectPool);
+        return effectPool;
     }
 }
