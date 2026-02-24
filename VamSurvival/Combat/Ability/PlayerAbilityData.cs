@@ -23,6 +23,9 @@ public abstract class PlayerAbilityData : ScriptableObject
     [Tooltip("true면 이동기. PlayerAbilityState에서 이동 입력을 차단하지 않습니다.")]
     public bool isMovementAbility;
 
+    [Tooltip("HUD에 표시할 스킬 아이콘")]
+    public Sprite icon;
+
     /// <summary>
     /// 어빌리티를 실행합니다.
     /// AnimationEventReceiver의 Execute 이벤트 타이밍에 PlayerCombat을 통해 호출됩니다.

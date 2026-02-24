@@ -41,9 +41,26 @@ public class PlayerCombat : MonoBehaviour
     private float skill1CooldownTimer;
     private float skill2CooldownTimer;
 
+    // 쿨다운 총 시간 (UI 비율 계산용)
+    private float attackCooldownTotal;
+    private float skill1CooldownTotal;
+    private float skill2CooldownTotal;
+
     public bool CanUseAttack => attackData != null && attackCooldownTimer <= 0f;
     public bool CanUseSkill1 => skill1Data != null && skill1CooldownTimer <= 0f;
     public bool CanUseSkill2 => skill2Data != null && skill2CooldownTimer <= 0f;
+
+    /// <summary>기본공격 쿨타임 비율 (0~1, 0이면 사용 가능)</summary>
+    public float AttackCooldownRatio => attackData != null && attackCooldownTotal > 0f
+        ? Mathf.Clamp01(attackCooldownTimer / attackCooldownTotal) : 0f;
+
+    /// <summary>스킬1 쿨타임 비율 (0~1, 0이면 사용 가능)</summary>
+    public float Skill1CooldownRatio => skill1Data != null && skill1CooldownTotal > 0f
+        ? Mathf.Clamp01(skill1CooldownTimer / skill1CooldownTotal) : 0f;
+
+    /// <summary>스킬2 쿨타임 비율 (0~1, 0이면 사용 가능)</summary>
+    public float Skill2CooldownRatio => skill2Data != null && skill2CooldownTotal > 0f
+        ? Mathf.Clamp01(skill2CooldownTimer / skill2CooldownTotal) : 0f;
 
     /// <summary>
     /// AnimationEventReceiver의 End 이벤트가 발생하면 true.
@@ -77,11 +94,20 @@ public class PlayerCombat : MonoBehaviour
 
         float cd = data.cooldown;
         if (data == attackData)
-            attackCooldownTimer = cd * controller.Stats.AttackCooldown.Value;
+        {
+            attackCooldownTotal = cd * controller.Stats.AttackCooldown.Value;
+            attackCooldownTimer = attackCooldownTotal;
+        }
         else if (data == skill1Data)
-            skill1CooldownTimer = cd * controller.Stats.SkillCooldown.Value;
+        {
+            skill1CooldownTotal = cd * controller.Stats.SkillCooldown.Value;
+            skill1CooldownTimer = skill1CooldownTotal;
+        }
         else if (data == skill2Data)
-            skill2CooldownTimer = cd * controller.Stats.SkillCooldown.Value;
+        {
+            skill2CooldownTotal = cd * controller.Stats.SkillCooldown.Value;
+            skill2CooldownTimer = skill2CooldownTotal;
+        }
     }
 
     // ── AnimationEventReceiver UnityEvent에 연결할 메서드들 ──
