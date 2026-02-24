@@ -54,8 +54,18 @@ public class ProjectileAbilityData : PlayerAbilityData
 
     private void SpawnProjectile(Vector3 origin, Vector3 direction, float damage)
     {
-        GameObject go = Object.Instantiate(projectilePrefab, origin, Quaternion.LookRotation(direction));
-        if (go.TryGetComponent<ProjectileBase>(out var proj))
-            proj.Initialize(direction, projectileSpeed, damage);
+        if (CombatPoolManager.Instance != null)
+        {
+            var proj = CombatPoolManager.Instance.GetProjectile(
+                projectilePrefab, origin, Quaternion.LookRotation(direction));
+            if (proj != null)
+                proj.Initialize(direction, projectileSpeed, damage, origin);
+        }
+        else
+        {
+            GameObject go = Object.Instantiate(projectilePrefab, origin, Quaternion.LookRotation(direction));
+            if (go.TryGetComponent<ProjectileBase>(out var proj))
+                proj.Initialize(direction, projectileSpeed, damage, origin);
+        }
     }
 }
