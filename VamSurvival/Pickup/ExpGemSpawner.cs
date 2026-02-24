@@ -106,7 +106,7 @@ public class ExpGemSpawner : MonoBehaviour
         tierIndex = Mathf.Clamp(tierIndex, 0, tiers.Length - 1);
 
         ExpGem gem = pools[tierIndex].Get();
-        gem.transform.position = position;
+        gem.transform.position = position + Vector3.up * 0.3f;
         gem.Initialize(expValue, pools[tierIndex]);
     }
 
