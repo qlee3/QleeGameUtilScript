@@ -22,6 +22,15 @@ public class PlayerMovement : MonoBehaviour
     /// <summary>넉백 속도. FixedUpdate에서 감쇠 적용.</summary>
     private Vector3 knockbackVelocity;
 
+    /// <summary>대시 이동 방향 × 속도.</summary>
+    private Vector3 dashVelocity;
+
+    /// <summary>대시 남은 거리. 0 이하가 되면 대시 종료.</summary>
+    private float dashRemainingDistance;
+
+    /// <summary>현재 대시 중인지 여부.</summary>
+    public bool IsDashing => dashRemainingDistance > 0f;
+
     /// <summary>현재 이동 중인지 여부.</summary>
     public bool IsMoving { get; private set; }
 
@@ -95,6 +104,26 @@ public class PlayerMovement : MonoBehaviour
         knockbackVelocity = direction.normalized * force;
     }
 
+    /// <summary>
+    /// 대시 이동을 시작합니다. DashAbilityData.Execute()에서 호출합니다.
+    /// 대시 중에는 pendingMove(일반 이동)가 무시되고 대시 속도만 적용됩니다.
+    /// </summary>
+    /// <param name="direction">대시 방향 (XZ 평면)</param>
+    /// <param name="speed">대시 이동 속도</param>
+    /// <param name="distance">대시 총 이동 거리</param>
+    /// <param name="damage">대시 중 피해량 (미사용, 향후 확장용)</param>
+    public void ApplyDash(Vector3 direction, float speed, float distance, float damage = 0f)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) return;
+
+        dashVelocity = direction.normalized * speed;
+        dashRemainingDistance = distance;
+
+        // 대시 방향으로 즉시 회전
+        transform.rotation = Quaternion.LookRotation(direction.normalized);
+    }
+
     private void FixedUpdate()
     {
         // 넉백 감쇠
@@ -104,7 +133,23 @@ public class PlayerMovement : MonoBehaviour
             knockbackDecay * Time.fixedDeltaTime
         );
 
-        Vector3 totalMove = pendingMove * Time.fixedDeltaTime + knockbackVelocity * Time.fixedDeltaTime;
+        Vector3 totalMove = Vector3.zero;
+
+        // 대시 중이면 일반 이동 무시, 대시 속도 적용
+        if (dashRemainingDistance > 0f)
+        {
+            float step = dashVelocity.magnitude * Time.fixedDeltaTime;
+            step = Mathf.Min(step, dashRemainingDistance);
+            dashRemainingDistance -= step;
+            totalMove += dashVelocity.normalized * step;
+        }
+        else
+        {
+            totalMove += pendingMove * Time.fixedDeltaTime;
+        }
+
+        totalMove += knockbackVelocity * Time.fixedDeltaTime;
+
         if (totalMove.sqrMagnitude > 0.001f)
         {
             rb.MovePosition(rb.position + totalMove);
