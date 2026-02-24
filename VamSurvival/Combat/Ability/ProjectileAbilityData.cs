@@ -30,8 +30,10 @@ public class ProjectileAbilityData : PlayerAbilityData
         }
 
         float damage = CalculateDamage(player);
-        Vector3 origin = player.transform.position;
-        Vector3 forward = player.transform.forward;
+        Transform fp = player.Combat.FirePoint;
+        bool hasFirePoint = fp != null;
+        Vector3 origin = hasFirePoint ? fp.position : player.transform.position;
+        Vector3 forward = hasFirePoint ? fp.forward : player.transform.forward;
         forward.y = 0f;
 
         if (projectileCount <= 1)

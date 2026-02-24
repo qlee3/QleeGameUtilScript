@@ -25,9 +25,16 @@ public class PlayerCombat : MonoBehaviour
     [Tooltip("스킬2 어빌리티. 어떤 타입의 PlayerAbilityData SO든 장착 가능합니다.")]
     [SerializeField] private PlayerAbilityData skill2Data;
 
+    [Header("Fire Point")]
+    [Tooltip("투사체 발사 위치/방향. 미설정 시 플레이어 위치·forward에서 발사합니다.")]
+    [SerializeField] private Transform firePoint;
+
     public PlayerAbilityData AttackData => attackData;
     public PlayerAbilityData Skill1Data => skill1Data;
     public PlayerAbilityData Skill2Data => skill2Data;
+
+    /// <summary>투사체 발사 위치. null이면 플레이어 transform 사용.</summary>
+    public Transform FirePoint => firePoint;
 
     // 쿨다운 타이머 (남은 시간, 0 이하면 사용 가능)
     private float attackCooldownTimer;

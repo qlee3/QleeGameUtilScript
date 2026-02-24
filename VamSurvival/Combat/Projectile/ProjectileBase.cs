@@ -28,12 +28,7 @@ public class ProjectileBase : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         rb.useGravity = false;
-        rb.constraints = RigidbodyConstraints.FreezePositionY
-                       | RigidbodyConstraints.FreezeRotationX
-                       | RigidbodyConstraints.FreezeRotationY
-                       | RigidbodyConstraints.FreezeRotationZ;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.isKinematic = true;
     }
 
     /// <summary>
@@ -59,7 +54,7 @@ public class ProjectileBase : MonoBehaviour
 
         rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
 
-        if (Vector3.Distance(startPosition, transform.position) >= maxDistance)
+        if (Vector3.Distance(startPosition, rb.position) >= maxDistance)
             Destroy(gameObject);
     }
 
