@@ -10,6 +10,9 @@ public class PlayerMovement : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float rotationSpeed = 720f;
 
+    [Header("Camera")]
+    [SerializeField] private ThirdPersonCameraController cameraController;
+
     [Header("Knockback")]
     [SerializeField] private float knockbackDecay = 8f;
 
@@ -39,6 +42,11 @@ public class PlayerMovement : MonoBehaviour
         controller = GetComponent<PlayerController>();
         rb = GetComponent<Rigidbody>();
 
+        if (cameraController == null)
+        {
+            cameraController = FindObjectOfType<ThirdPersonCameraController>();
+        }
+
         ConfigureRigidbody();
     }
 
@@ -48,9 +56,9 @@ public class PlayerMovement : MonoBehaviour
     private void ConfigureRigidbody()
     {
         rb.useGravity = false;
+        // 3인칭 이동을 위해 Y축 회전은 허용하고, 나머지 회전/높이만 고정합니다.
         rb.constraints = RigidbodyConstraints.FreezePositionY
                        | RigidbodyConstraints.FreezeRotationX
-                       | RigidbodyConstraints.FreezeRotationY
                        | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -72,7 +80,35 @@ public class PlayerMovement : MonoBehaviour
 
         // XZ 평면 이동 (Y는 무시) - 이동속도는 PlayerStats에서 가져옴
         float speed = controller.Stats.MoveSpeed.Value;
-        Vector3 moveDirection = new Vector3(input.x, 0f, input.y).normalized;
+
+        Vector3 moveDirection;
+
+        // 카메라 기준 이동: 카메라의 전방/우측 벡터를 사용해 월드 좌표 이동 방향을 계산합니다.
+        if (cameraController != null)
+        {
+            Vector3 forward = cameraController.CameraForwardOnPlane;
+            Vector3 right = cameraController.CameraRightOnPlane;
+
+            moveDirection = (right * input.x + forward * input.y);
+            moveDirection.y = 0f;
+            if (moveDirection.sqrMagnitude > 0.0001f)
+            {
+                moveDirection.Normalize();
+            }
+        }
+        else
+        {
+            // 카메라 컨트롤러가 없으면 기존 탑다운 방식으로 폴백합니다.
+            moveDirection = new Vector3(input.x, 0f, input.y).normalized;
+        }
+
+        if (moveDirection.sqrMagnitude < 0.0001f)
+        {
+            IsMoving = false;
+            pendingMove = Vector3.zero;
+            return;
+        }
+
         pendingMove = moveDirection * speed;
 
         // 이동 방향으로 부드럽게 회전 (시각적 처리이므로 Update 타이밍에서 수행)
