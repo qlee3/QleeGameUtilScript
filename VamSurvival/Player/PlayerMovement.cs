@@ -121,6 +121,17 @@ public class PlayerMovement : MonoBehaviour
         dashRemainingDistance = distance;
 
         // 대시 방향으로 즉시 회전
+        RotateImmediately(direction);
+    }
+
+    /// <summary>
+    /// 지정한 XZ 평면 방향으로 즉시 회전합니다.
+    /// </summary>
+    public void RotateImmediately(Vector3 direction)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) return;
+
         transform.rotation = Quaternion.LookRotation(direction.normalized);
     }
 

@@ -92,6 +92,8 @@ public class PlayerCombat : MonoBehaviour
 
         if (data == null) return;
 
+        RotateTowardAutoTargetIfNeeded(data);
+
         float cd = data.cooldown;
         if (data == attackData)
         {
@@ -108,6 +110,17 @@ public class PlayerCombat : MonoBehaviour
             skill2CooldownTotal = cd * controller.Stats.SkillCooldown.Value;
             skill2CooldownTimer = skill2CooldownTotal;
         }
+    }
+
+    private void RotateTowardAutoTargetIfNeeded(PlayerAbilityData data)
+    {
+        if (data is not ProjectileAbilityData projectileData)
+            return;
+
+        if (!projectileData.TryGetAutoTargetDirection(controller, out Vector3 targetDirection))
+            return;
+
+        controller.Movement.RotateImmediately(targetDirection);
     }
 
     // ── AnimationEventReceiver UnityEvent에 연결할 메서드들 ──
