@@ -72,14 +72,18 @@ public class EnemyController : Entity<EnemyController>
         Stats.Initialize(data);
         Health.Initialize(Stats);
         Detection.Initialize(playerTransform);
+        Movement.SetAIPathEnabled(true);
         Movement.Initialize(data.moveSpeed);
+        Movement.Stop();
 
         if (ContactDamage != null)
         {
             ContactDamage.Initialize(data.contactDamage, data.contactDamageInterval);
+            ContactDamage.SetActive(true);
         }
 
-        // 사망 이벤트 구독
+        // 풀 재사용 시 중복 구독을 방지합니다.
+        Health.OnDeath -= HandleDeath;
         Health.OnDeath += HandleDeath;
 
         // FSM 시작: 스폰 상태

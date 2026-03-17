@@ -17,6 +17,9 @@ public class StageWaveSpawner : MonoBehaviour
     [SerializeField] private int poolDefaultCapacity = 8;
     [SerializeField] private int poolMaxSize = 64;
 
+    [Header("Debug")]
+    [SerializeField] private bool enableSpawnDebugLogs;
+
     // ── 상태 ──
 
     private SpawnLayoutData currentLayout;
@@ -101,10 +104,6 @@ public class StageWaveSpawner : MonoBehaviour
             return;
         }
 
-        Debug.Log("StartWaves");
-        Debug.Log(currentWaveIndex);
-        Debug.Log(totalWaveCount);
-
         CacheWavePoints(layout);
         StartWave(currentWaveIndex);
     }
@@ -147,6 +146,7 @@ public class StageWaveSpawner : MonoBehaviour
 
         if (!pointsByWave.TryGetValue(waveIndex, out List<SpawnPointDefinition> wavePoints) || wavePoints.Count == 0)
         {
+            LogDebug($"Wave {waveIndex} has no spawn points. Advancing.");
             AdvanceWave();
             return;
         }
@@ -154,6 +154,7 @@ public class StageWaveSpawner : MonoBehaviour
         currentWaveIndex = waveIndex;
         spawnedCountInWave = 0;
         totalSpawnCountInWave = GetTotalSpawnCount(wavePoints);
+        LogDebug($"Starting wave {waveIndex}. entries={wavePoints.Count}, totalSpawnCount={totalSpawnCountInWave}, alive={aliveCount}");
 
         EnsurePools(wavePoints);
 
@@ -170,15 +171,18 @@ public class StageWaveSpawner : MonoBehaviour
         {
             SpawnPointDefinition point = wavePoints[i];
             if (point == null || point.enemyPrefab == null || point.enemyData == null)
+            {
+                LogDebug($"Skipping invalid spawn point at wave {currentWaveIndex}, index={i}.");
                 continue;
+            }
 
             for (int spawnIndex = 0; spawnIndex < point.spawnCount; spawnIndex++)
             {
                 if (!isRunning)
                     yield break;
 
-                SpawnOne(point);
-                spawnedCountInWave++;
+                if (SpawnOne(point))
+                    spawnedCountInWave++;
 
                 if (point.spawnInterval > 0f && spawnIndex < point.spawnCount - 1)
                     yield return new WaitForSeconds(point.spawnInterval);
@@ -191,20 +195,28 @@ public class StageWaveSpawner : MonoBehaviour
             AdvanceWave();
     }
 
-    private void SpawnOne(SpawnPointDefinition point)
+    private bool SpawnOne(SpawnPointDefinition point)
     {
         if (!poolByPrefab.TryGetValue(point.enemyPrefab, out IObjectPool<EnemyController> pool))
         {
             Debug.LogWarning("[StageWaveSpawner] 풀을 찾을 수 없습니다.");
-            return;
+            return false;
         }
 
         EnemyController enemy = pool.Get();
+        if (enemy == null)
+        {
+            Debug.LogWarning("[StageWaveSpawner] pool.Get()이 null을 반환했습니다.");
+            return false;
+        }
+
         enemy.transform.SetPositionAndRotation(point.position, Quaternion.identity);
         poolByInstance[enemy] = pool;
         aliveCount++;
 
         enemy.Initialize(point.enemyData, playerTransform);
+        LogDebug($"Spawned enemy id={enemy.GetInstanceID()} wave={currentWaveIndex} prefab={point.enemyPrefab.name} pos={point.position} alive={aliveCount} spawned={spawnedCountInWave + 1}/{totalSpawnCountInWave}");
+        return true;
     }
 
     private void HandleEnemyDeactivated(EnemyController enemy)
@@ -218,6 +230,8 @@ public class StageWaveSpawner : MonoBehaviour
             poolByInstance.Remove(enemy);
             pool.Release(enemy);
         }
+
+        LogDebug($"Deactivated enemy id={enemy.GetInstanceID()} wave={currentWaveIndex} state={enemy.CurrentState?.GetType().Name ?? "None"} alive={aliveCount} spawned={spawnedCountInWave}/{totalSpawnCountInWave} running={isRunning}");
 
         if (!isRunning) return;
 
@@ -234,16 +248,10 @@ public class StageWaveSpawner : MonoBehaviour
 
         if (currentLayout == null || nextWave >= totalWaveCount)
         {
-            Debug.Log("AdvanceWave");
-            Debug.Log(nextWave);
-            Debug.Log(totalWaveCount);
             isRunning = false;
             OnAllWavesCleared?.Invoke();
             return;
         }
-        Debug.Log("AdvanceWave 2");
-        Debug.Log(nextWave);
-        Debug.Log(totalWaveCount);
 
         StartWave(nextWave);
     }
@@ -322,6 +330,14 @@ public class StageWaveSpawner : MonoBehaviour
         }
 
         return total;
+    }
+
+    private void LogDebug(string message)
+    {
+        if (!enableSpawnDebugLogs)
+            return;
+
+        Debug.Log($"[StageWaveSpawner] {message}", this);
     }
 
     private void ResolvePlayerTransform()
