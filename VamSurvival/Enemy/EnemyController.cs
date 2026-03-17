@@ -98,8 +98,8 @@ public class EnemyController : Entity<EnemyController>
     {
         Health.OnDeath -= HandleDeath;
         Movement.Stop();
-        OnDeactivated?.Invoke(this);
         gameObject.SetActive(false);
+        OnDeactivated?.Invoke(this);
     }
 
     protected override void Update()
