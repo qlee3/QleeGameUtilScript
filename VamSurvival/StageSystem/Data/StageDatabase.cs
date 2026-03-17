@@ -14,6 +14,9 @@ public class StageDatabase : ScriptableObject
 
     public StageData GetStage(int index)
     {
+        if (stages == null || index < 0 || index >= stages.Length)
+            return null;
+
         return stages[index];
     }
 }

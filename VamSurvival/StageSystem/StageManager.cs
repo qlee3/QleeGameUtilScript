@@ -3,8 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// 스테이지/서브스테이지 진행을 관리합니다.
-/// MapManager로 맵을 로드하고, StageWaveSpawner로 웨이브를 시작하며,
-/// 웨이브 클리어 시 다음 서브스테이지로 자동 진행합니다.
+/// MapManager로 맵을 로드하고, StageWaveSpawner로 스폰 레이아웃을 실행하며,
+/// 서브스테이지 클리어 시 다음 서브스테이지로 자동 진행합니다.
 /// </summary>
 public class StageManager : MonoBehaviour
 {
@@ -118,20 +118,24 @@ public class StageManager : MonoBehaviour
     private void LoadSubStage(int index)
     {
         SubStageConfig config = currentStage.GetSubStage(index);
+        if (config == null)
+        {
+            Debug.LogWarning($"[StageManager] subStage[{index}]가 유효하지 않습니다.");
+            return;
+        }
 
         waveSpawner.StopAndClearAll();
         mapManager.LoadMap(config.mapPrefab);
-        waveSpawner.SetSpawnPoints(mapManager.SpawnPoints);
 
         OnSubStageStarted?.Invoke(index, currentStage.SubStageCount);
 
-        if (config.waves != null && config.waves.Length > 0)
+        if (config.spawnLayout != null)
         {
-            waveSpawner.StartWaves(config.waves);
+            waveSpawner.StartWaves(config.spawnLayout);
         }
         else
         {
-            Debug.LogWarning($"[StageManager] subStage[{index}]에 waves가 없습니다.");
+            Debug.LogWarning($"[StageManager] subStage[{index}]에 spawnLayout이 없습니다.");
         }
     }
 
